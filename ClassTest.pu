@@ -1,6 +1,6 @@
 @startuml
 package Logger {
-    class Logger {
+    interface Logger {
         void __construct(Driver driver)
         string log(string comment)
     }
