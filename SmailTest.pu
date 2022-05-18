@@ -1,0 +1,72 @@
+@startuml 
+title SmailTestA
+
+actor User
+participant SmailTestA
+participant SmailTestB
+participant Handler
+
+User -> SmailTestB : アプリ起動
+activate SmailTestB
+SmailTestB -> SmailTestB : ブロードキャスト\nレシーバーをセット
+
+note right SmailTestB
+バックアップ開始/進捗/終了を
+TestAと送受信するために使用する
+end note
+
+User -> SmailTestA : アプリ起動
+activate SmailTestA
+
+SmailTestA -> SmailTestA : ブロードキャスト\nレシーバー(外部)をセット
+    note right SmailTestA
+    バックアップ開始/進捗/終了を
+    TestBと送受信するために使用する
+    end note
+
+SmailTestA -> SmailTestA : ブロードキャスト\nレシーバー(内部)をセット
+    note right SmailTestA
+    バックアップ進捗をTestBから
+    受け取った後にTestA内で
+    ダイアログ上の進捗ゲージに
+    反映させるために使用する
+    end note
+
+User -> SmailTestA : START_BACKUP\nボタン押下
+SmailTestA -> SmailTestA : 確認ダイアログ表示
+
+alt OKボタン押下
+    SmailTestA -> SmailTestA : バックアップ中ダイアログ表示
+else CANCEL選択ボタン押下
+    SmailTestA -> SmailTestA : ダイアログ閉
+end
+
+SmailTestA -> SmailTestB : バックアップ開始リクエストを\nブロードキャストインテント
+SmailTestB --> SmailTestA : バックアップ開始をTestAに通知
+SmailTestA -> SmailTestA : 進捗ゲージをバックアップ中\nダイアログに表示
+SmailTestB -> Handler : Runnable
+activate Handler
+
+loop 100カウント終了まで
+    Handler -> Handler : index(カウンタ)を\nインクリメント
+    Handler --> SmailTestA : バックアップ進捗を\nブロードキャストインテント
+    SmailTestA -> SmailTestA : バックアップ中ダイアログの\nゲージを更新
+
+    alt ユーザー操作あり
+        User -> SmailTestA : CANCELボタン押下
+        SmailTestA -> SmailTestB : バックアップキャンセルリクエストを\nブロードキャストインテント
+        SmailTestB -> Handler : ハンドラ停止処理
+        SmailTestA -> SmailTestA : バックアップ中ダイアログ閉
+    end
+end
+
+SmailTestB -> Handler : ハンドラ停止処理
+Handler -> Handler : ハンドラ停止
+deactivate Handler
+
+SmailTestB --> SmailTestA : バックアップ完了を\nブロードキャストインテント
+SmailTestA -> SmailTestA : バックアップ完了ダイアログ表示
+
+
+
+@enduml
